@@ -94,41 +94,28 @@ functor LLRBcreate(To: TOTALORDER):
 			else x;
 
 		fun	lookup(x,Empty) = NONE
-		|	lookup(x,Node{value = y, left, right, ...}) =
-			case cmp(x,y) of
+		|	lookup(x,Node{value = y, left, right, ...}) = case cmp(x,y) of
 				LESS => lookup(x,left)
 			|	GREATER => lookup(x,right)
 			|	EQUAL => SOME y;
 
-		fun	insert(x, y) =
-			let
-				fun	insert1(x,Empty) = Node{value=x, left=Empty, right=Empty, color=RED}
-				|	insert1(x, y as Node{value=v, left=l, right=r, color=c}) =
-					let
-						val h =
-							case cmp(x,v) of
-								LESS => Node{
-									value = v,
-									left = insert1(x, l),
-									right = r,
-									color = c
-								}
-							|	GREATER => Node{
-									value = v,
-									left = l,
-									right = insert1(x, r),
-									color = c
-								}
-							|	EQUAL => Node{value=x, left=l, right=r, color=c};
-					in
-						fixup(h)
-					end;
-				val t = insert1(x, y)
-			in
-				case t of
-					Node{color=BLACK, ...} => t
-				|	Node{color=RED, left=l, right=r, value=v} =>
-						Node{color=BLACK, left=l, right=r, value=v}
-				|	Empty => raise Match
-			end;
+		fun	insert(x, y) = let
+			fun	insert1(x,Empty) = Node{value=x, left=Empty, right=Empty, color=RED}
+			|	insert1(x, y as Node{value=v, left=l, right=r, color=c}) =
+				let
+					val h = case cmp(x,v) of
+						LESS => Node{value=v, left=insert1(x, l), right=r, color=c}
+					|	GREATER => Node{value=v,left=l,right=insert1(x, r),color=c}
+					|	EQUAL => Node{value=x, left=l, right=r, color=c};
+				in
+					fixup(h)
+				end;
+			val t = insert1(x, y)
+		in
+			case t of
+				Node{color=BLACK, ...} => t
+			|	Node{color=RED, left=l, right=r, value=v} =>
+					Node{color=BLACK, left=l, right=r, value=v}
+			|	Empty => raise Match
+		end;
 	end;
