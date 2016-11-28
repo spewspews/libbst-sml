@@ -189,18 +189,18 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			|	Node h => (suc, Node(fixup(h)))
 		end
 	and	dless(x, h as {left=l, ...}) = case l of
-            Empty => (false, Node h)
-        |	Node{left=ll, ...} =>
-	            let
+			Empty => (false, Node h)
+		|	Node{left=ll, ...} =>
+				let
 					val {left=l, right=r, color=c, value=v} =
-		                if not(isred(l)) andalso not(isred(ll)) then
-		                    moveredleft(h)
-		                else
-		                    h;
-	                val (suc, dl) = delete1(x, l)
-	            in
-	                (suc, Node{left=dl, right=r, value=v, color=c})
-	            end
+						if not(isred(l)) andalso not(isred(ll)) then
+							moveredleft(h)
+						else
+							h;
+					val (suc, dl) = delete1(x, l)
+				in
+					(suc, Node{left=dl, right=r, value=v, color=c})
+				end
 	and	dgeq(x, h as {left=l, ...}) = 
 		let
 			val h =
