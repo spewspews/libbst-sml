@@ -191,16 +191,16 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 	and	dless(h as {left=l, ...}, x) = case l of
 			Empty => (false, Node h)
 		|	Node{left=ll, ...} =>
-				let
-					val {left=l, right=r, color=c, value=v} =
-						if not(isred(l)) andalso not(isred(ll)) then
-							moveredleft(h)
-						else
-							h;
-					val (suc, dl) = delete1(l,x)
-				in
-					(suc, Node{left=dl, right=r, value=v, color=c})
-				end
+			let
+				val {left=l, right=r, color=c, value=v} =
+					if not(isred(l)) andalso not(isred(ll)) then
+						moveredleft(h)
+					else
+						h;
+				val (suc, dl) = delete1(l,x)
+			in
+				(suc, Node{left=dl, right=r, value=v, color=c})
+			end
 	and	dgeq(h as {left=l, ...}, x) = 
 		let
 			val h as {right=r, value=v, ...} =
@@ -216,29 +216,29 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 					else
 						(false, Node h)
 			|	Node {left=rl, ...} =>
-					let
-						val {right=r, left=l, value=v, color=c} =
-							if not(isred(r)) andalso not(isred(rl)) then
-								moveredright(h)
-							else
-								h;
-					in
-						case cmp(x,v) of
-							EQUAL =>
-								let
-									val (del, dr) = deletemin(r);
-								in
-									case del of
-										SOME delv => (true, Node{right=dr, value=delv, left=l, color=c})
-									|	NONE => (false, Node{right=dr, value=v, left=l, color=c})
-								end
-						|	_ =>
-								let
-									val (suc, dr) = delete1(r,x);
-								in
-									(suc, Node{right=dr, left=l, value=v, color=c})
-								end
-					end
+				let
+					val {right=r, left=l, value=v, color=c} =
+						if not(isred(r)) andalso not(isred(rl)) then
+							moveredright(h)
+						else
+							h;
+				in
+					case cmp(x,v) of
+						EQUAL =>
+						let
+							val (del, dr) = deletemin(r);
+						in
+							case del of
+								SOME delv => (true, Node{right=dr, value=delv, left=l, color=c})
+							|	NONE => (false, Node{right=dr, value=v, left=l, color=c})
+						end
+					|	_ =>
+						let
+							val (suc, dr) = delete1(r,x);
+						in
+							(suc, Node{right=dr, left=l, value=v, color=c})
+						end
+				end
 		end
 
 	fun	delete(Empty,x) = (false, Empty)
