@@ -4,14 +4,14 @@ signature ORDERED = sig
 end;
 
 signature BST = sig
+	structure Ordered : ORDERED;
 	type 'k btree;
 	type elt;
-	structure Ordered : ORDERED;
 	sharing type elt = Ordered.element;
 	val create : 'k btree;
-	val lookup : elt * elt btree -> elt option;
-	val insert : elt * elt btree -> elt btree;
-	val delete : elt * elt btree -> bool * elt btree;
+	val lookup : elt btree * elt -> elt option;
+	val insert : elt btree * elt -> elt btree;
+	val delete : elt btree * elt -> bool * elt btree;
 end;
 
 functor LLRBcreate(O: ORDERED) : BST = struct
@@ -100,27 +100,27 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 		else
 			h;
 
-	fun	lookup(x,Empty) = NONE
-	|	lookup(x,Node{value = y, left, right, ...}) = case cmp(x,y) of
-			LESS => lookup(x,left)
-		|	GREATER => lookup(x,right)
+	fun	lookup(Empty,x) = NONE
+	|	lookup(Node{value = y, left, right, ...},x) = case cmp(x,y) of
+			LESS => lookup(left,x)
+		|	GREATER => lookup(right,x)
 		|	EQUAL => SOME y;
 
-	fun	insert1(x,Empty) = Node{value=x, left=Empty, right=Empty, color=RED}
-	|	insert1(x, y as Node{value=v, left=l, right=r, color=c}) =
+	fun	insert1(Empty,x) = Node{value=x, left=Empty, right=Empty, color=RED}
+	|	insert1(y as Node{value=v, left=l, right=r, color=c}, x) =
 		let
 			val h = case cmp(x,v) of
-				LESS => {value=v, left=insert1(x, l), right=r, color=c}
-			|	GREATER => {value=v,left=l,right=insert1(x, r),color=c}
+				LESS => {value=v, left=insert1(l,x), right=r, color=c}
+			|	GREATER => {value=v,left=l,right=insert1(r,x),color=c}
 			|	EQUAL => {value=x, left=l, right=r, color=c};
 			val h = fixup(h)
 		in
 			Node(h)
 		end;
 
-	fun	insert(x, y) =
+	fun	insert(t,x) =
 		let
-			val t = insert1(x, y)
+			val t = insert1(t, x)
 		in
 			case t of
 				Node{color=BLACK, ...} => t
@@ -177,18 +177,18 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				end;
 
 
-	fun	delete1(x, Empty) = (false,Empty)
-	|	delete1(x, Node(h as {value=v, left=l, ...})) =
+	fun	delete1(Empty,x) = (false,Empty)
+	|	delete1(Node(h as {value=v, left=l, ...}),x) =
 		let
 			val (suc, h) = case cmp(x,v) of
-				LESS => dless(x, h)
-			|	_ => dgeq(x, h)
+				LESS => dless(h,x)
+			|	_ => dgeq(h,x)
 		in
 			case h of
 				Empty => (suc, Empty)
 			|	Node h => (suc, Node(fixup(h)))
 		end
-	and	dless(x, h as {left=l, ...}) = case l of
+	and	dless(h as {left=l, ...}, x) = case l of
 			Empty => (false, Node h)
 		|	Node{left=ll, ...} =>
 				let
@@ -197,11 +197,11 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 							moveredleft(h)
 						else
 							h;
-					val (suc, dl) = delete1(x, l)
+					val (suc, dl) = delete1(l,x)
 				in
 					(suc, Node{left=dl, right=r, value=v, color=c})
 				end
-	and	dgeq(x, h as {left=l, ...}) = 
+	and	dgeq(h as {left=l, ...}, x) = 
 		let
 			val h =
 				if isred(l) then
@@ -236,17 +236,17 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 								end
 						|	_ =>
 								let
-									val (suc, dr) = delete1(x, r);
+									val (suc, dr) = delete1(r,x);
 								in
 									(suc, Node{right=dr, left=l, value=v, color=c})
 								end
 					end
 		end
 
-	fun	delete(x, Empty) = (false, Empty)
-	|	delete(x, t) =
+	fun	delete(Empty,x) = (false, Empty)
+	|	delete(t,x) =
 		let
-			val (suc,t) = delete1(x,t)
+			val (suc,t) = delete1(t,x)
 		in
 			case t of
 				Node{color=BLACK, ...} => (suc, t)
