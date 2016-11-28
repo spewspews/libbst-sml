@@ -189,7 +189,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				Empty => (suc, h)
 			|	Node h => (suc, Node(fixup(h)))
 		end
-	and dless(x, h as {left=l, ...}) =
+	and	dless(x, h as {left=l, ...}) =
 	        case l of
 	            Empty => (false, Node h)
 	        |	Node{left=ll, ...} =>
@@ -203,7 +203,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 	            in
 	                (suc, Node{left=dl, right=r, value=v, color=c})
 	            end
-	and dgeq(x, h as {left=l, ...}) = 
+	and	dgeq(x, h as {left=l, ...}) = 
 		let
 			val {left=l, right=r, value=v, color=c} =
 				if isred(l) then
