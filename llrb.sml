@@ -91,7 +91,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			rotateleft(h)
 		else if isred(l) andalso (
 			case l of
-				Node l => isred(#left(l))
+				Node ln => isred(#left(ln))
 			|	Empty => raise Fail("Impossible.")
 		) then
 			flip(rotateright(h))
@@ -107,15 +107,15 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 		|	EQUAL => SOME y;
 
 	fun	insert1(Empty,x) = Node{value=x, left=Empty, right=Empty, color=RED}
-	|	insert1(y as Node{value=v, left=l, right=r, color=c}, x) =
+	|	insert1(Node{value=v, left=l, right=r, color=c}, x) =
 		let
 			val h = case cmp(x,v) of
 				LESS => {value=v, left=insert1(l,x), right=r, color=c}
-			|	GREATER => {value=v,left=l,right=insert1(r,x),color=c}
+			|	GREATER => {value=v, left=l, right=insert1(r,x), color=c}
 			|	EQUAL => {value=x, left=l, right=r, color=c};
 			val h = fixup(h)
 		in
-			Node(h)
+			Node h
 		end;
 
 	fun	insert(t,x) =
@@ -131,14 +131,14 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 
 	fun	moveredleft(h) =
 		let
-			val h = flip(h)
+			val h as {right=r, left=l, value=v, color=c} = flip(h)
 		in
-			case h of
-				{right=Node r, left=l, value=v, color=c} =>
-					if isred(#left(r)) then
+			case r of
+				Node rn =>
+					if isred(#left(rn)) then
 						let
-							val r = rotateright(r)
-							val h = {right=Node r, left=l, color=c, value=v};
+							val rn = rotateright(rn)
+							val h = {right=Node rn, left=l, color=c, value=v};
 						in
 							flip(rotateleft(h))
 						end
@@ -149,10 +149,10 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 
 	fun	moveredright(h) =
 		let
-			val h = flip(h)
+			val h as {left=l, ...} = flip(h)
 		in
-			case h of
-				{left=Node{left=ll, ...}, ...} =>
+			case l of
+				Node{left=ll, ...} =>
 					if isred(ll) then
 						flip(rotateright(h))
 					else
@@ -203,12 +203,11 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				end
 	and	dgeq(h as {left=l, ...}, x) = 
 		let
-			val h =
+			val h as {right=r, value=v, ...} =
 				if isred(l) then
 					rotateright(h)
 				else
 					h;
-			val {right=r, value=v, ...} = h
 		in
 			case r of
 				Empty =>
@@ -218,12 +217,11 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 						(false, Node h)
 			|	Node {left=rl, ...} =>
 					let
-						val h =
+						val {right=r, left=l, value=v, color=c} =
 							if not(isred(r)) andalso not(isred(rl)) then
 								moveredright(h)
 							else
 								h;
-						val {right=r, left=l, value=v, color=c} = h
 					in
 						case cmp(x,v) of
 							EQUAL =>
@@ -232,7 +230,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 								in
 									case del of
 										SOME delv => (true, Node{right=dr, value=delv, left=l, color=c})
-									|	NONE => (false, Node h)
+									|	NONE => (false, Node{right=dr, value=v, left=l, color=c})
 								end
 						|	_ =>
 								let
