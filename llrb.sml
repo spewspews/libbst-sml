@@ -243,7 +243,8 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 					end
 		end
 
-	fun	delete(x, t) =
+	fun	delete(x, Empty) = (false, Empty)
+	|	delete(x, t) =
 		let
 			val (suc,t) = delete1(x,t)
 		in
@@ -251,6 +252,6 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				Node{color=BLACK, ...} => (suc, t)
 			|	Node{color=RED, left=l, right=r, value=v} =>
 					(suc, Node{color=BLACK, left=l, right=r, value=v})
-			|	Empty => (false, Empty)
+			|	Empty => (true, Empty)
 		end;
 end;
