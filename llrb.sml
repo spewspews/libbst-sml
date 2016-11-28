@@ -164,17 +164,17 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 	|	deletemin(Node(h as {left=l, value=v, ...})) = case l of
 			Empty => (SOME v, Empty)
 		|	Node{left=ll, ...} =>
-				let
-					val {left=l, right=r, color=c, value=v} =
-						if not(isred(l)) andalso not(isred(ll)) then
-							moveredleft(h)
-						else
-							h
-					val (vopt, dl) = deletemin(l)
-					val h = {left=dl, right=r, color=c, value=v}
-				in
-					(vopt, Node(fixup(h)))
-				end;
+			let
+				val {left=l, right=r, color=c, value=v} =
+					if not(isred(l)) andalso not(isred(ll)) then
+						moveredleft(h)
+					else
+						h
+				val (vopt, dl) = deletemin(l)
+				val h = {left=dl, right=r, color=c, value=v}
+			in
+				(vopt, Node(fixup(h)))
+			end;
 
 
 	fun	delete1(Empty,x) = (false,Empty)
