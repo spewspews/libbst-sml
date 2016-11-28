@@ -193,16 +193,16 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 	        case l of
 	            Empty => (false, Node h)
 	        |	Node{left=ll, ...} =>
-	            let
-	                val {left=l, right=r, color=c, value=v} =
-	                if not(isred(l)) andalso not(isred(ll)) then
-	                    moveredleft(h)
-	                else
-	                    h;
-	                val (suc, dl) = delete1(x, l)
-	            in
-	                (suc, Node{left=dl, right=r, value=v, color=c})
-	            end
+		            let
+		                val {left=l, right=r, color=c, value=v} =
+		                if not(isred(l)) andalso not(isred(ll)) then
+		                    moveredleft(h)
+		                else
+		                    h;
+		                val (suc, dl) = delete1(x, l)
+		            in
+		                (suc, Node{left=dl, right=r, value=v, color=c})
+		            end
 	and	dgeq(x, h as {left=l, ...}) = 
 		let
 			val {left=l, right=r, value=v, color=c} =
@@ -222,18 +222,18 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 							(suc, Node{right=dr, left=l, value=v, color=c})
 						end
 			|	Node {left=rl, ...} =>
-				let
-					val {left=l, right=r, value=v, color=c} =
-						if not(isred(r)) andalso not(isred(rl)) then
-							moveredright(h)
-						else
-							h
-					val (suc, dr) = case cmp(x, v) of
-						EQUAL => deletemin(r)
-					|	_ => delete1(x, r)
-				in
-					(suc, Node{right=dr, left=l, value=v, color=c})
-				end
+					let
+						val {left=l, right=r, value=v, color=c} =
+							if not(isred(r)) andalso not(isred(rl)) then
+								moveredright(h)
+							else
+								h
+						val (suc, dr) = case cmp(x, v) of
+							EQUAL => deletemin(r)
+						|	_ => delete1(x, r)
+					in
+						(suc, Node{right=dr, left=l, value=v, color=c})
+					end
 		end
 
 	fun	delete(x, t) =
