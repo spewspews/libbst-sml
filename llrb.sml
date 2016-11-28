@@ -134,11 +134,11 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			val h = flip(h)
 		in
 			case h of
-				{right=Node(r), left=l, value=v, color=c} =>
+				{right=Node r, left=l, value=v, color=c} =>
 					if isred(#left(r)) then
 						let
 							val r = rotateright(r)
-							val h = {left=l, right=Node(r), color=c, value=v};
+							val h = {right=Node r, left=l, color=c, value=v};
 						in
 							flip(rotateleft(h))
 						end
@@ -160,22 +160,21 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			|	_ => raise Fail("Tried to moveredright on a bad node.")
 		end;
 
-	fun	deletemin(Empty) = (false, Empty)
-	|	deletemin(Node(h as {left=l, ...})) =
-		case l of
-			Empty => (true, Empty)
+	fun	deletemin(Empty) = (NONE, Empty)
+	|	deletemin(Node(h as {left=l, value=v, ...})) = case l of
+			Empty => (SOME v, Empty)
 		|	Node{left=ll, ...} =>
-			let
-				val {left=l, right=r, color=c, value=v} = if not(isred(l)) andalso not(isred(ll))
-				then
-					moveredleft(h)
-				else
-					h
-				val (suc, dl) = deletemin(l)
-				val h = {left=dl, right=r, color=c, value=v}
-			in
-				(suc, Node(fixup(h)))
-			end;
+				let
+					val {left=l, right=r, color=c, value=v} =
+						if not(isred(l)) andalso not(isred(ll)) then
+							moveredleft(h)
+						else
+							h
+					val (vopt, dl) = deletemin(l)
+					val h = {left=dl, right=r, color=c, value=v}
+				in
+					(vopt, Node(fixup(h)))
+				end;
 
 
 	fun	delete1(x, Empty) = (false,Empty)
@@ -186,53 +185,61 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			|	_ => dgeq(x, h)
 		in
 			case h of
-				Empty => (suc, h)
+				Empty => (suc, Empty)
 			|	Node h => (suc, Node(fixup(h)))
 		end
-	and	dless(x, h as {left=l, ...}) =
-	        case l of
-	            Empty => (false, Node h)
-	        |	Node{left=ll, ...} =>
-		            let
-		                val {left=l, right=r, color=c, value=v} =
+	and	dless(x, h as {left=l, ...}) = case l of
+            Empty => (false, Node h)
+        |	Node{left=ll, ...} =>
+	            let
+					val {left=l, right=r, color=c, value=v} =
 		                if not(isred(l)) andalso not(isred(ll)) then
 		                    moveredleft(h)
 		                else
 		                    h;
-		                val (suc, dl) = delete1(x, l)
-		            in
-		                (suc, Node{left=dl, right=r, value=v, color=c})
-		            end
+	                val (suc, dl) = delete1(x, l)
+	            in
+	                (suc, Node{left=dl, right=r, value=v, color=c})
+	            end
 	and	dgeq(x, h as {left=l, ...}) = 
 		let
-			val {left=l, right=r, value=v, color=c} =
+			val h =
 				if isred(l) then
 					rotateright(h)
 				else
-					h
+					h;
+			val {right=r, value=v, ...} = h
 		in
 			case r of
 				Empty =>
 					if cmp(x, v) = EQUAL then
 						(true, Empty)
 					else
-						let
-							val (suc, dr) = delete1(x, r)
-						in
-							(suc, Node{right=dr, left=l, value=v, color=c})
-						end
+						(false, Node h)
 			|	Node {left=rl, ...} =>
 					let
-						val {left=l, right=r, value=v, color=c} =
+						val h =
 							if not(isred(r)) andalso not(isred(rl)) then
 								moveredright(h)
 							else
-								h
-						val (suc, dr) = case cmp(x, v) of
-							EQUAL => deletemin(r)
-						|	_ => delete1(x, r)
+								h;
+						val {right=r, left=l, value=v, color=c} = h
 					in
-						(suc, Node{right=dr, left=l, value=v, color=c})
+						case cmp(x,v) of
+							EQUAL =>
+								let
+									val (del, dr) = deletemin(r);
+								in
+									case del of
+										SOME delv => (true, Node{right=dr, value=delv, left=l, color=c})
+									|	NONE => (false, Node h)
+								end
+						|	_ =>
+								let
+									val (suc, dr) = delete1(x, r);
+								in
+									(suc, Node{right=dr, left=l, value=v, color=c})
+								end
 					end
 		end
 
