@@ -12,6 +12,7 @@ signature BST = sig
 	val lookup : elt btree * elt -> elt option;
 	val insert : elt btree * elt -> elt btree;
 	val delete : elt btree * elt -> bool * elt btree;
+	val map : (elt -> 'e) -> elt * elt -> elt btree -> 'e list;
 end;
 
 functor LLRBcreate(O: ORDERED) : BST = struct
@@ -37,27 +38,29 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 
 	val create = Empty;
 
+	(* color of x must be RED *)
 	fun	rotateleft {
-		right = x as Node{left=xl, right=xr, value=xv, color=RED},
+		right = x as Node{left=xl, right=xr, value=xv, color=xc},
 		left = l,
 		value = v,
 		color = c
 	} =
 		let
-			val h = Node{right=xl, left=l, value=v, color=RED}
+			val h = Node{right=xl, color=xc, left=l, value=v}
 		in
-			{left=h, right=xr, color=c, value=xv}
+			{left=h, color=c, right=xr, value=xv}
 		end
 	|	rotateleft(_) = raise Fail("Tried to rotateleft on a bad node.");
 
+	(* color of x must be RED *)
 	fun	rotateright {
-		left = x as Node{left=xl, right=xr, value=xv, color=RED},
+		left = x as Node{left=xl, right=xr, value=xv, color=xc},
 		right = r,
 		value = v,
 		color = c
 	} =
 		let
-			val h = Node{left=xr, right=r, value=v, color=RED}
+			val h = Node{left=xr, color=xc, right=r, value=v}
 		in
 			{right=h, left=xl, color=c, value=xv}
 		end
@@ -91,7 +94,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			rotateleft(h)
 		else if isred(l) andalso (
 			case l of
-				Node ln => isred(#left(ln))
+				Node {left=ll, ...} => isred(ll)
 			|	Empty => raise Fail("Impossible.")
 		) then
 			flip(rotateright(h))
@@ -134,11 +137,11 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			val h as {right=r, left=l, value=v, color=c} = flip(h)
 		in
 			case r of
-				Node rn =>
-					if isred(#left(rn)) then
+				Node(rrec as {left=rl, ...}) =>
+					if isred(rl) then
 						let
-							val rn = rotateright(rn)
-							val h = {right=Node rn, left=l, color=c, value=v};
+							val rrec = rotateright(rrec)
+							val h = {right=Node rrec, left=l, color=c, value=v};
 						in
 							flip(rotateleft(h))
 						end
@@ -173,7 +176,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				val (vopt, dl) = deletemin(l)
 				val h = {left=dl, right=r, color=c, value=v}
 			in
-				(vopt, Node(fixup(h)))
+				(vopt, Node(fixup h))
 			end;
 
 
@@ -186,7 +189,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 		in
 			case h of
 				Empty => (suc, Empty)
-			|	Node h => (suc, Node(fixup(h)))
+			|	Node h => (suc, Node(fixup h))
 		end
 	and	dless(h as {left=l, ...}, x) = case l of
 			Empty => (false, Node h)
@@ -252,4 +255,17 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 					(suc, Node{color=BLACK, left=l, right=r, value=v})
 			|	Empty => (true, Empty)
 		end;
+
+	fun	map _ _ Empty = []
+	|	map f (min,max) (Node{left=l, right=r, value=v, ...}) =
+		let
+			val llist = map f (min,max) l;
+			val rlist = map f (min,max) r
+		in
+			if cmp(v,min) = LESS orelse cmp(v,max) = GREATER then
+				llist @ rlist
+			else
+				llist @ f(v)::rlist
+		end;
+		
 end;
