@@ -173,8 +173,8 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 					if not(isred(l)) andalso not(isred(ll)) then
 						moveredleft(h)
 					else
-						h
-				val (vopt, dl) = deletemin(l)
+						h;
+				val (vopt, dl) = deletemin(l);
 				val h = {left=dl, right=r, color=c, value=v}
 			in
 				(vopt, Node(fixup h))
@@ -211,7 +211,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				if isred(l) then
 					rotateright(h)
 				else
-					h;
+					h
 		in
 			case r of
 				Empty =>
@@ -225,12 +225,12 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 						if not(isred(r)) andalso not(isred(rl)) then
 							moveredright(h)
 						else
-							h;
+							h
 				in
 					case cmp(x,v) of
 						EQUAL =>
 						let
-							val (del, dr) = deletemin(r);
+							val (del, dr) = deletemin(r)
 						in
 							case del of
 								SOME delv => (true, Node{right=dr, value=delv, left=l, color=c})
@@ -238,12 +238,12 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 						end
 					|	_ =>
 						let
-							val (suc, dr) = delete1(r,x);
+							val (suc, dr) = delete1(r,x)
 						in
 							(suc, Node{right=dr, left=l, value=v, color=c})
 						end
 				end
-		end
+		end;
 
 	fun	delete(Empty,x) = (false, Empty)
 	|	delete(t,x) =
