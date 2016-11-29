@@ -12,7 +12,8 @@ signature BST = sig
 	val lookup : elt btree * elt -> elt option;
 	val insert : elt btree * elt -> elt btree;
 	val delete : elt btree * elt -> bool * elt btree;
-	val map : (elt -> 'e) -> elt * elt -> elt btree -> 'e list;
+	val map : (elt -> 'e) -> elt option * elt option -> elt btree -> 'e list;
+	val app : (elt -> unit) -> elt option * elt option -> elt btree -> unit;
 end;
 
 functor LLRBcreate(O: ORDERED) : BST = struct
@@ -256,16 +257,28 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			|	Empty => (true, Empty)
 		end;
 
+	fun optcmp(x,NONE) = EQUAL
+	|	optcmp(x,SOME y) = cmp(x,y);
+
 	fun	map _ _ Empty = []
 	|	map f (min,max) (Node{left=l, right=r, value=v, ...}) =
 		let
 			val llist = map f (min,max) l;
 			val rlist = map f (min,max) r
 		in
-			if cmp(v,min) = LESS orelse cmp(v,max) = GREATER then
+			if optcmp(v,min) = LESS orelse optcmp(v,max) = GREATER then
 				llist @ rlist
 			else
 				llist @ f(v)::rlist
 		end;
-		
+
+	fun	app _ _ Empty = ()
+	|	app f (min,max) (Node{left=l, right=r, value=v, ...}) = (
+			app f (min,max) l;
+			if optcmp(v,min) = LESS orelse optcmp(v,max) = GREATER then
+				()
+			else
+				f(v);
+			app f (min,max) r
+		);
 end;
