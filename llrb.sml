@@ -8,7 +8,7 @@ signature BST = sig
 	type 'k btree;
 	type elt;
 	sharing type elt = Ordered.element;
-	val create : 'k btree;
+	val create : elt btree;
 	val lookup : elt btree * elt -> elt option;
 	val insert : elt btree * elt -> elt btree;
 	val delete : elt btree * elt -> bool * elt btree;
@@ -257,7 +257,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			|	Empty => (true, Empty)
 		end;
 
-	fun optcmp(x,NONE) = EQUAL
+	fun	optcmp(x,NONE) = EQUAL
 	|	optcmp(x,SOME y) = cmp(x,y);
 
 	fun	map _ _ Empty = []
