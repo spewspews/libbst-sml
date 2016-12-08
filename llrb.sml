@@ -90,50 +90,47 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 	|	isred(Node{color = BLACK, ...}) = false
 	|	isred(Node{color = RED, ...}) = true;
 
-	fun	fixup(h as {left=l, right=r, ...}) =
-		if isred(r) andalso not(isred(l)) then
-			rotateleft(h)
-		else if isred(l) andalso (
-			case l of
-				Node {left=ll, ...} => isred(ll)
-			|	Empty => raise Fail("Impossible.")
-		) then
-			flip(rotateright(h))
-		else if isred(l) andalso isred(r) then
-			flip(h)
-		else
-			h;
-
-	fun	lookup(Empty,x) = NONE
-	|	lookup(Node{value = y, left, right, ...},x) = case cmp(x,y) of
+	fun	lookup (Empty,x) = NONE
+	|	lookup(Node{value = y, left, right, ...},x) =
+		case cmp(x,y) of
 			LESS => lookup(left,x)
 		|	GREATER => lookup(right,x)
 		|	EQUAL => SOME y;
 
-	fun	insert1(Empty,x) = Node{value=x, left=Empty, right=Empty, color=RED}
-	|	insert1(Node{value=v, left=l, right=r, color=c}, x) =
+	fun insertfix (h as {left=l, right=r, ...}) =
+		if isred(l) andalso isred(r) then flip h
+		else if isred(l) andalso (
+			case l of
+				Node {left=ll, ...} => isred(ll)
+			|	Empty => raise Fail("Impossible.")
+		) then flip(rotateright h)
+		else if isred(r) then rotateleft h
+		else h;
+
+	fun	insert1 (Empty,x) = Node{value=x, left=Empty, right=Empty, color=RED}
+	|	insert1 (Node{value=v, left=l, right=r, color=c}, x) =
 		let
 			val h = case cmp(x,v) of
 				LESS => {value=v, left=insert1(l,x), right=r, color=c}
 			|	GREATER => {value=v, left=l, right=insert1(r,x), color=c}
 			|	EQUAL => {value=x, left=l, right=r, color=c};
-			val h = fixup(h)
+			val h = insertfix h
 		in
 			Node h
 		end;
 
-	fun	insert(t,x) =
+	fun	insert (t,x) =
 		let
 			val t = insert1(t, x)
 		in
 			case t of
-				Node{color=BLACK, ...} => t
-			|	Node{color=RED, left=l, right=r, value=v} =>
-					Node{color=BLACK, left=l, right=r, value=v}
+				Node{color=RED, ...} => t
+			|	Node{color=BLACK, left=l, right=r, value=v} =>
+					Node{color=RED, left=l, right=r, value=v}
 			|	_ => raise Fail("Result of insertion was Empty.")
 		end;
 
-	fun	moveredleft(h) =
+	fun	moveredleft h =
 		let
 			val h as {right=r, left=l, value=v, color=c} = flip(h)
 		in
@@ -146,12 +143,11 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 						in
 							flip(rotateleft(h))
 						end
-					else
-						h
+					else h
 			|	_ => raise Fail("Tried to moveredleft on a bad node.")
 		end;
 
-	fun	moveredright(h) =
+	fun	moveredright h =
 		let
 			val h as {left=l, ...} = flip(h)
 		in
@@ -159,30 +155,34 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				Node{left=ll, ...} =>
 					if isred(ll) then
 						flip(rotateright(h))
-					else
-						h
+					else h
 			|	_ => raise Fail("Tried to moveredright on a bad node.")
 		end;
 
-	fun	deletemin(Empty) = (NONE, Empty)
-	|	deletemin(Node(h as {left=l, value=v, ...})) = case l of
+	fun deletefix (h as {left=l, right=r, ...}) =
+		if isred(l) andalso isred(r) then flip h
+		else if isred(r) then rotateleft h
+		else h;
+
+	fun	deletemin Empty = (NONE, Empty)
+	|	deletemin (Node(h as {left=l, value=v, ...})) =
+		case l of
 			Empty => (SOME v, Empty)
 		|	Node{left=ll, ...} =>
 			let
 				val {left=l, right=r, color=c, value=v} =
 					if not(isred(l)) andalso not(isred(ll)) then
 						moveredleft(h)
-					else
-						h;
+					else h;
 				val (vopt, dl) = deletemin(l);
 				val h = {left=dl, right=r, color=c, value=v}
 			in
-				(vopt, Node(fixup h))
+				(vopt, Node(deletefix h))
 			end;
 
 
-	fun	delete1(Empty,x) = (false,Empty)
-	|	delete1(Node(h as {value=v, left=l, ...}),x) =
+	fun	delete1 (Empty,x) = (false,Empty)
+	|	delete1 (Node(h as {value=v, left=l, ...}),x) =
 		let
 			val (suc, h) = case cmp(x,v) of
 				LESS => dless(h,x)
@@ -190,42 +190,37 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 		in
 			case h of
 				Empty => (suc, Empty)
-			|	Node h => (suc, Node(fixup h))
+			|	Node h => (suc, Node(deletefix h))
 		end
-	and	dless(h as {left=l, ...}, x) = case l of
+	and	dless (h as {left=l, ...}, x) =
+		case l of
 			Empty => (false, Node h)
 		|	Node{left=ll, ...} =>
 			let
 				val {left=l, right=r, color=c, value=v} =
 					if not(isred(l)) andalso not(isred(ll)) then
 						moveredleft(h)
-					else
-						h;
+					else h;
 				val (suc, dl) = delete1(l,x)
 			in
 				(suc, Node{left=dl, right=r, value=v, color=c})
 			end
-	and	dgeq(h as {left=l, ...}, x) = 
+	and	dgeq (h as {left=l, ...}, x) = 
 		let
 			val h as {right=r, value=v, ...} =
-				if isred(l) then
-					rotateright(h)
-				else
-					h
+				if isred(l) then rotateright(h)
+				else h
 		in
 			case r of
 				Empty =>
-					if cmp(x, v) = EQUAL then
-						(true, Empty)
-					else
-						(false, Node h)
+					if cmp(x, v) = EQUAL then (true, Empty)
+					else (false, Node h)
 			|	Node {left=rl, ...} =>
 				let
 					val {right=r, left=l, value=v, color=c} =
 						if not(isred(r)) andalso not(isred(rl)) then
 							moveredright(h)
-						else
-							h
+						else h
 				in
 					case cmp(x,v) of
 						EQUAL =>
@@ -245,8 +240,8 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				end
 		end;
 
-	fun	delete(Empty,x) = (false, Empty)
-	|	delete(t,x) =
+	fun	delete (Empty,x) = (false, Empty)
+	|	delete (t,x) =
 		let
 			val (suc,t) = delete1(t,x)
 		in
@@ -257,8 +252,8 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			|	Empty => (true, Empty)
 		end;
 
-	fun	optcmp(x,NONE) = EQUAL
-	|	optcmp(x,SOME y) = cmp(x,y);
+	fun	optcmp (x,NONE) = EQUAL
+	|	optcmp (x,SOME y) = cmp(x,y);
 
 	fun	map _ _ Empty = []
 	|	map f (min,max) (Node{left=l, right=r, value=v, ...}) =
@@ -268,8 +263,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 		in
 			if optcmp(v,min) = LESS orelse optcmp(v,max) = GREATER then
 				llist @ rlist
-			else
-				llist @ f(v)::rlist
+			else llist @ f(v)::rlist
 		end;
 
 	fun	app _ _ Empty = ()
@@ -277,8 +271,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			app f (min,max) l;
 			if optcmp(v,min) = LESS orelse optcmp(v,max) = GREATER then
 				()
-			else
-				f(v);
+			else f(v);
 			app f (min,max) r
 		);
 end;
