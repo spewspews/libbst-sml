@@ -1,5 +1,6 @@
+use "bst";
 use "llrb";
-use "../rand/rand";
+use "rand";
 
 structure Node : ORDERED = struct
 	type element = int;
@@ -25,10 +26,10 @@ local
 			insertloop rnd m (IntBST.insert (t,rnd())) (i+1)
 		else t
 in
-	fun inserts () = let
+	fun inserts t = let
 		val theloop = insertloop nrand nodes;
 		val timer = Timer.startCPUTimer();
-		val t = theloop IntBST.create 0;
+		val t = theloop t 0;
 		val {nongc={usr=usertime, ...}, ...} = Timer.checkCPUTimes timer;
 	in
 		(t,Time.toMilliseconds usertime)
@@ -72,7 +73,7 @@ in
 end;
 
 fun main () = let
-	val (t,inserttime) = inserts ();
+	val (t,inserttime) = inserts IntBST.create;
 	val (l,lookuptime) = lookups t;
 	val (t,ld,deletetime) = deletes t;
 	val (l1,lookuptime1) = lookups t
