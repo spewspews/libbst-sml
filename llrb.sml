@@ -29,6 +29,8 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 
 	datatype compare = LESS|GREATER|EQUAL;
 
+	fun assert (b,s) = if b then () else raise Fail ("Assertion failed: " ^ s);
+
 	fun	cmp (x,y) =
 		if Ordered.lt(x,y) then LESS
 		else if Ordered.lt(y,x) then GREATER
@@ -36,29 +38,27 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 
 	val create = Empty;
 
-	(* color of x must be RED *)
 	fun	rotateleft {
-		right = x as Node{left=xl, right=xr, value=xv, color=xc},
+		right = x as Node{left=xl, right=xr, value=xv, color=RED},
 		left = l,
 		value = v,
 		color = c
 	} =
 		let
-			val h = Node{right=xl, color=xc, left=l, value=v}
+			val h = Node{right=xl, color=RED, left=l, value=v}
 		in
 			{left=h, color=c, right=xr, value=xv}
 		end
 	|	rotateleft(_) = raise Fail("Tried to rotateleft on a bad node.");
 
-	(* color of x must be RED *)
 	fun	rotateright {
-		left = x as Node{left=xl, right=xr, value=xv, color=xc},
+		left = x as Node{left=xl, right=xr, value=xv, color=RED},
 		right = r,
 		value = v,
 		color = c
 	} =
 		let
-			val h = Node{left=xr, color=xc, right=r, value=v}
+			val h = Node{left=xr, color=RED, right=r, value=v}
 		in
 			{right=h, left=xl, color=c, value=xv}
 		end
@@ -73,14 +73,15 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 		let
 			fun	flipcolor RED = BLACK
 			|	flipcolor BLACK = RED
-		in
+		in (
+			assert (lc = rc, "Flip colors do not match");
 			{
 				color = flipcolor c,
 				left = Node{color=flipcolor lc, value=lv, left=ll, right=lr},
 				right = Node{color=flipcolor rc, value=rv, left=rl, right=rr},
 				value = v
 			}
-		end
+		) end
 	|	flip(_) = raise Fail("Tried to flip on a bad node.")
 
 	fun	isred Empty = false
@@ -88,11 +89,18 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 	|	isred (Node{color = RED, ...}) = true;
 
 	fun	lookup (Empty,x) = NONE
-	|	lookup (Node{value = y, left, right, ...},x) =
-		case cmp(x,y) of
-			LESS => lookup (left,x)
-		|	GREATER => lookup (right,x)
-		|	EQUAL => SOME y;
+	|	lookup (Node{value = y, left=l, right=r, ...},x) = (
+			assert ((not (isred r)), "Red is on the right");
+			assert ((not (isred l) orelse (
+				case l of
+					Node{left=ll, ...} => not (isred ll)
+				|	_ => raise Fail("Impossible.")
+			)), "Two reds in a row");
+			case cmp(x,y) of
+				LESS => lookup (l,x)
+			|	GREATER => lookup (r,x)
+			|	EQUAL => SOME y
+		);
 
 	fun insertfix (h as {left=l, right=r, ...}) =
 		if isred l andalso isred r then flip h
@@ -121,9 +129,9 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			val t = insert1 (t, x)
 		in
 			case t of
-				Node{color=RED, ...} => t
-			|	Node{color=BLACK, left=l, right=r, value=v} =>
-					Node{color=RED, left=l, right=r, value=v}
+				Node{color=BLACK, ...} => t
+			|	Node{color=RED, left=l, right=r, value=v} =>
+					Node{color=BLACK, left=l, right=r, value=v}
 			|	_ => raise Fail("Result of insertion was Empty.")
 		end;
 
