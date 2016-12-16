@@ -1,5 +1,5 @@
-use "bst";
-use "avl";
+use "../bst.sml";
+use "../avl.sml";
 
 structure Node : ORDERED = struct
 	type element = int;
