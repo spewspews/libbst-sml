@@ -95,39 +95,39 @@ functor AVLcreate(O : ORDERED) : BST = struct
 		end;
 
 	fun insertfix ({balance=0, left=l, right=r, value=v},a) =
-			(true,{balance=a, left=l, right=r, value=v})
+			(true,Node {balance=a, left=l, right=r, value=v})
 	|	insertfix (s as {balance=b, left=l, right=r, value=v},a) =
 			if b = ~a then
-				(false,{balance=0, left=l, right=r, value=v})
+				(false,Node {balance=0, left=l, right=r, value=v})
 			else let
 				val {balance=b, ...} = case child(s,a) of
 					Node n => n
 				|	_ => raise Fail "fun insertfix: Impossible"
 			in
-				if b = a then (false,singlerot(s,a))
-				else (false,doublerot(s,a))
+				if b = a then (false,Node (singlerot (s,a)))
+				else (false,Node (doublerot (s,a)))
 			end;
 
-	fun insert1 (Empty,k) = (true,{value=k, left=Empty, right=Empty, balance=0})
-	|	insert1 (Node{left=l, right=r, balance=b, value=v},k) =
+	fun insert1 (Empty,k) = (true,Node {value=k, left=Empty, right=Empty, balance=0})
+	|	insert1 (Node {left=l, right=r, balance=b, value=v},k) =
 		let
 			val (a,fix,s) = case cmp(k,v) of
-				LESS => let val (fix,l) = insert1(l,k)
+				LESS => let val (fix,newl) = insert1(l,k)
 				in
-					(~1,fix,{left=Node l, right=r, balance=b, value=v})
+					(~1,fix,{left=newl, right=r, balance=b, value=v})
 				end
-			|	GREATER => let val (fix,r) = insert1(r,k) in
-					(1,fix,{right=Node r, left=l, balance=b, value=v})
+			|	GREATER => let val (fix,newr) = insert1(r,k) in
+					(1,fix,{right=newr, left=l, balance=b, value=v})
 				end
 			|	EQUAL => (0,false,{value=k, left=l, right=r, balance=b})
 		in
 			if fix then
-				insertfix(s,a)
+				insertfix (s,a)
 			else
-				(false,s)
+				(false,Node s)
 		end;
 
-	fun insert (t,k) = let val (fix,t) = insert1(t,k) in Node t end;
+	fun insert (t,k) = let val (fix,t) = insert1(t,k) in t end;
 
 	fun deletefix ({balance=0,left=l,right=r,value=v},a) =
 			(false,Node {balance=a,left=l,right=r,value=v})
