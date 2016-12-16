@@ -166,24 +166,24 @@ functor AVLcreate(O : ORDERED) : BST = struct
 		in case (c,r) of
 			(EQUAL,Empty) => (true,true,l)
 		|	_ => let
-				val (found,a,fix,q) = case c of
+				val (found,fix,a,q) = case c of
 					EQUAL => let
 						val (fix,newr,newv) = deletemin(r);
 						val q = {right=newr,value=newv,left=l,balance=b}
 					in
-						(true,~1,fix,q)
+						(true,fix,~1,q)
 					end
 				|	GREATER => let
 						val (found,fix,newr) = delete1(r,k);
 						val q = {right=newr,left=l,balance=b,value=v}
 					in
-						(found,~1,fix,q)
+						(found,fix,~1,q)
 					end
 				|	LESS => let
 						val (found,fix,newl) = delete1(l,k);
 						val q = {left=newl,right=r,balance=b,value=v}
 					in
-						(found,1,fix,q)
+						(found,fix,1,q)
 					end
 			in if fix then
 				let
