@@ -1,5 +1,4 @@
-Left Leaning Red Black Tree in SML
+Balanced Search Trees in SML
 ==
 
-This is morphing into a BST implementation with both LLRB
-and AVL trees.
+An implementation of purely functional AVL and LLRB trees in SML.
