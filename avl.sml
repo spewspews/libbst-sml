@@ -130,10 +130,10 @@ functor AVLcreate(O : ORDERED) : BST = struct
 	fun insert (t,k) = let val (fix,t) = insert1(t,k) in Node t end;
 
 	fun deletefix ({balance=0,left=l,right=r,value=v},a) =
-			(false,{balance=a,left=l,right=r,value=v})
+			(false,Node {balance=a,left=l,right=r,value=v})
 	|	deletefix (s as {balance=b,left=l,right=r,value=v},a) =
 			if(b = ~a) then
-				(true,{balance=0,left=l,right=r,value=v})
+				(true,Node {balance=0,left=l,right=r,value=v})
 			else let
 				val {balance=cb,...} = case child(s,a) of
 					Node n => n
@@ -143,9 +143,9 @@ functor AVLcreate(O : ORDERED) : BST = struct
 					val {value=v,left=l,right=r,...} = rotate (s,a);
 					val s = {balance= ~a,left=l,right=r,value=v}
 				in
-					(false,s)
-				end else if cb = a then (true,singlerot (s,a))
-				else (true,doublerot (s,a))
+					(false,Node s)
+				end else if cb = a then (true,Node (singlerot (s,a)))
+				else (true,Node (doublerot (s,a)))
 			end;
 
 	fun deletemin Empty = raise Fail "fun deletemin: Called on empty node"
@@ -154,15 +154,50 @@ functor AVLcreate(O : ORDERED) : BST = struct
 		let
 			val (fix,newl,minv) = deletemin(l);
 			val q = {left=newl,right=r,value=v,balance=b};
-			val (fix,q) = if not fix then (false,q) else deletefix(q,1);
+			val (fix,q) = if not fix then (false,Node q) else deletefix(q,1);
 		in
-			(fix,Node q,minv)
+			(fix,q,minv)
 		end;
 
-	fun delete1 (Empty,_) = (false,Empty)
-	|	delete1 (Node {left=l,right=r,balance=b,value=v},k) = (false,Empty);
+	fun delete1 (Empty,_) = (false,false,Empty)
+	|	delete1 (Node {left=l,right=r,balance=b,value=v},k) =
+		let
+			val c = cmp(k,v)
+		in case (c,r) of
+			(EQUAL,Empty) => (true,true,l)
+		|	_ => let
+				val (found,a,fix,q) = case c of
+					EQUAL => let
+						val (fix,newr,newv) = deletemin(r);
+						val q = {right=newr,value=newv,left=l,balance=b}
+					in
+						(true,~1,fix,q)
+					end
+				|	GREATER => let
+						val (found,fix,newr) = delete1(r,k);
+						val q = {right=newr,left=l,balance=b,value=v}
+					in
+						(found,~1,fix,q)
+					end
+				|	LESS => let
+						val (found,fix,newl) = delete1(l,k);
+						val q = {left=newl,right=r,balance=b,value=v}
+					in
+						(found,1,fix,q)
+					end
+			in if fix then
+				let
+					val (fix,q) = deletefix(q,a)
+				in
+					(found,fix,q)
+				end
+			else
+				(found,false,Node q)
+			end
+		end;
 
-	fun delete (t,k) = (false,t);
+	fun delete (Empty,k) = (false,Empty)
+	|	delete (t,k) = let val (found,fix,t) = delete1(t,k) in (found,t) end;
 
 	fun map _ (_,_) _ = [];
 
