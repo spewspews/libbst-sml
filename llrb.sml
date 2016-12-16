@@ -55,7 +55,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 		let
 			fun	flipcolor RED = BLACK
 			|	flipcolor BLACK = RED
-		in (
+		in
 			assert (lc = rc, "Flip colors do not match");
 			{
 				color = flipcolor c,
@@ -63,7 +63,7 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 				right = Node{color=flipcolor rc, value=rv, left=rl, right=rr},
 				value = v
 			}
-		) end
+		end
 	|	flip(_) = raise Fail("Tried to flip on a bad node.")
 
 	fun	isred Empty = false
@@ -261,4 +261,8 @@ functor LLRBcreate(O: ORDERED) : BST = struct
 			else f v;
 			app f (min,max) r
 		);
+
+	fun test t = ();
+
+	fun toString _ _ = "";
 end;

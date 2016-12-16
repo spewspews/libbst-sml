@@ -1,16 +1,16 @@
 use "bst";
-use "llrb";
+use "avl";
 use "rand";
 
 structure Node : ORDERED = struct
 	type element = int;
 	fun lt (a,b) = if a < b then true else false;
-end
+end;
 
-structure IntBST = LLRBcreate(Node);
+structure IntBST = AVLcreate(Node);
 
-val max =  1000000;
-val nodes = 500000;
+val max =  10000000;
+val nodes = 1000000;
 
 fun rand m = let
 	val r = Rand.srand (Time.toSeconds (Time.now()));
@@ -75,14 +75,10 @@ end;
 fun main () = let
 	val (t,inserttime) = inserts IntBST.create;
 	val (l,lookuptime) = lookups t;
-	val (t,ld,deletetime) = deletes t;
-	val (l1,lookuptime1) = lookups t
 in
 	print ("Inserts took " ^ (Int.toString inserttime) ^ "ms.\n");
+	IntBST.test t;
+	print "Tree is balanced\n";
 	print ("Lookups took " ^ (Int.toString lookuptime) ^ "ms.\n");
-	print ("There were " ^ (Int.toString l) ^ " successful lookups.\n");
-	print ("Deletions took " ^ (Int.toString deletetime) ^ "ms.\n");
-	print ("There were " ^ (Int.toString ld) ^ " successful deletions.\n");
-	print ("Lookups took " ^ (Int.toString lookuptime1) ^ "ms.\n");
-	print ("There were " ^ (Int.toString l1) ^ " successful lookups.\n")
+	print ("There were " ^ (Int.toString l) ^ " successful lookups.\n")
 end;

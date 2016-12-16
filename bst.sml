@@ -14,4 +14,6 @@ signature BST = sig
 	val delete : elt btree * elt -> bool * elt btree;
 	val map : (elt -> 'e) -> elt option * elt option -> elt btree -> 'e list;
 	val app : (elt -> unit) -> elt option * elt option -> elt btree -> unit;
+	val test : elt btree -> unit;
+	val toString : (elt -> string) -> elt btree -> string;
 end;

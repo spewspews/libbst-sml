@@ -1,4 +1,4 @@
-functor AVLcreate(O: ORDERED) = struct
+functor AVLcreate(O : ORDERED) : BST = struct
 	structure Ordered = O;
 
 	type elt = Ordered.element;
@@ -23,41 +23,51 @@ functor AVLcreate(O: ORDERED) = struct
 
 	val create = Empty;
 
-	fun child (~1,{left=l, ...}) = l
-	|	child (1,{right=r, ...}) = r
+	fun lookup (Empty,k) = NONE
+	|	lookup (Node{left=l,right=r,value=v,...},k) = case cmp(k,v) of
+			LESS => lookup(l,k)
+		|	GREATER => lookup(r,k)
+		|	EQUAL => SOME v;
+
+	fun child ({left=l, ...},~1) = l
+	|	child ({right=r, ...},1) = r
 	|	child (_,_) = raise Fail "fun child: Invalid child";
 
-	fun setchild (~1, {right=r, balance=b, value=v, ...}, n) =
-			{left=n, right=r, balance=b, value=v}
-	|	setchild (1, {left=l, balance=b, value=v, ...}, n) =
-			{right=n, left=l, balance=b, value=v}
-	|	setchild (_,_,_) = raise Fail "fun setchild: Invalid child";
+	fun setone ({right=r, balance=b, value=v, ...},~1,c) =
+			{left=c, right=r, balance=b, value=v}
+	|	setone ({left=l, balance=b, value=v, ...},1,c) =
+			{right=c, left=l, balance=b, value=v}
+	|	setone (_,_,_) = raise Fail "fun setone: Invalid child";
 
-	fun rotate (a,s) = 
+	fun setboth ({value=v, balance=b,...},~1,r,l) = {left=l, right=r, value=v, balance=b}
+	|	setboth ({value=v, balance=b,...},1,l,r) = {left=l, right=r, value=v, balance=b}
+	|	setboth (_,_,_,_) = raise Fail "fun setboth: Invalid direction";
+
+	fun rotate (s,a) =
 		let
-			val c = case child(a,s) of
-				Node h => h
+			val c = case child (s,a) of
+				Node n => n
 			|	_ => raise Fail "Tried to rotate on a bad node";
-			val s = setchild (a,s,child (~a,c))
+			val s = setone (s,a,child (c,~a))
 		in
-			setchild(~a,c,Node s)
+			setone(c,~a,Node s)
 		end;
 
-	fun singlerot (a,{left=l, right=r, balance=b, value=v}) =
+	fun singlerot ({left=l, right=r, balance=b, value=v},a) = 
 		let
 			val s = {balance=0, left=l, right=r, value=v};
-			val {left=l, right=r, balance=b, value=v} = rotate (a,s);
+			val {left=l, right=r, balance=b, value=v} = rotate (s,a);
 		in
 			{balance=0, left=l, right=r, value=v}
 		end;
 
-	fun rebalance (a,p as {balance=b, ...}) =
+	fun doublebal (t as {balance=b, ...},a) =
 		let
-			val {left=sl, right=sr, value=sv, ...} = case child(~a,p) of
-				Node h => h
+			val {left=sl, right=sr, value=sv, ...} = case child(t,~a) of
+				Node n => n
 			|	_ => raise Fail "fun rebalance: bad node";
-			val {left=rl, right=rr, value=rv, ...} = case child(a,p) of
-				Node h => h
+			val {left=rl, right=rr, value=rv, ...} = case child(t,a) of
+				Node n => n
 			|	_ => raise Fail "fun rebalance: bad node";
 			val (sb,rb) = if b = a then
 				(~a,0)
@@ -67,41 +77,38 @@ functor AVLcreate(O: ORDERED) = struct
 				(0,0);
 			val s = {balance=sb, left=sl, right=sr, value=sv};
 			val r = {balance=rb, left=rl, right=rr, value=rv};
-			val p = setchild (~a,p,Node s);
-			val p as {left=l, right=r, value=v, ...} = setchild (a,p,Node r);
+			val {left=l, right=r, value=v, ...} = setboth(t,a,Node s,Node r)
 		in
 			{balance=0, left=l, right=r, value=v}
 		end;
 
-	fun doublerot (a,s) =
+	fun doublerot (s,a) =
 		let
-			val c = case child(a,s) of
-				Node h => h
+			val r = case child(s,a) of
+				Node n => n
 			|	_ => raise Fail "fun doublerot: bad node";
-			val c = rotate (~a,c);
-			val s = setchild(a,s,Node c);
-			val s = rotate(a,s);
+			val p = rotate (r,~a);
+			val s = setone(s,a,Node p);
+			val t = rotate(s,a);
 		in
-			rebalance (a,s)
+			doublebal (t,a)
 		end;
 
-	fun insertfix (a,{balance=0, left=l, right=r, value=v}) =
+	fun insertfix ({balance=0, left=l, right=r, value=v},a) =
 			(true,{balance=a, left=l, right=r, value=v})
-	|	insertfix (a,s as {balance=b, left=l, right=r, value=v}) =
+	|	insertfix (s as {balance=b, left=l, right=r, value=v},a) =
 			if b = ~a then
 				(false,{balance=0, left=l, right=r, value=v})
 			else let
-				val {balance=b, ...} = case child(a,s) of
-					Node h => h
-				|	_ => raise Fail "fun insertfix: bad node"
+				val {balance=b, ...} = case child(s,a) of
+					Node n => n
+				|	_ => raise Fail "fun insertfix: Impossible"
 			in
-				if b = a then
-					(false,singlerot(a,s))
-				else
-					(false,doublerot(a,s))
+				if b = a then (false,singlerot(s,a))
+				else (false,doublerot(s,a))
 			end;
 
-	fun insert1 (Empty,k) = (false,{value=k, left=Empty, right=Empty, balance=0})
+	fun insert1 (Empty,k) = (true,{value=k, left=Empty, right=Empty, balance=0})
 	|	insert1 (Node{left=l, right=r, balance=b, value=v},k) =
 		let
 			val (a,fix,s) = case cmp(k,v) of
@@ -115,10 +122,92 @@ functor AVLcreate(O: ORDERED) = struct
 			|	EQUAL => (0,false,{value=k, left=l, right=r, balance=b})
 		in
 			if fix then
-				insertfix(a,s)
+				insertfix(s,a)
 			else
 				(false,s)
 		end;
 
 	fun insert (t,k) = let val (fix,t) = insert1(t,k) in Node t end;
+
+	fun deletefix ({balance=0,left=l,right=r,value=v},a) =
+			(false,{balance=a,left=l,right=r,value=v})
+	|	deletefix (s as {balance=b,left=l,right=r,value=v},a) =
+			if(b = ~a) then
+				(true,{balance=0,left=l,right=r,value=v})
+			else let
+				val {balance=cb,...} = case child(s,a) of
+					Node n => n
+				|	_ => raise Fail "fun deletefix: Impossible"
+			in
+				if cb = 0 then let
+					val {value=v,left=l,right=r,...} = rotate (s,a);
+					val s = {balance= ~a,left=l,right=r,value=v}
+				in
+					(false,s)
+				end else if cb = a then (true,singlerot (s,a))
+				else (true,doublerot (s,a))
+			end;
+
+	fun deletemin Empty = raise Fail "fun deletemin: Called on empty node"
+	|	deletemin (Node {left=Empty,right=r,value=v,...}) =	(true,r,v)
+	|	deletemin (Node {left=l,right=r,value=v,balance=b}) =
+		let
+			val (fix,newl,minv) = deletemin(l);
+			val q = {left=newl,right=r,value=v,balance=b};
+			val (fix,q) = if not fix then (false,q) else deletefix(q,1);
+		in
+			(fix,Node q,minv)
+		end;
+
+	fun delete1 (Empty,_) = (false,Empty)
+	|	delete1 (Node {left=l,right=r,balance=b,value=v},k) = (false,Empty);
+
+	fun delete (t,k) = (false,t);
+
+	fun map _ (_,_) _ = [];
+
+	fun app _ (_,_) _ = ();
+
+	fun longest Empty = 0
+	|	longest (Node{left=l, right=r,...}) =
+		let
+			val ln = longest(l);
+			val rn = longest(r);
+			val m = if ln > rn then ln else rn
+		in
+			m+1
+		end;
+
+	fun checkbalance Empty = ()
+	|	checkbalance (Node{left=l, right=r, balance=b,...}) =
+		let
+			val ln = longest(l);
+			val rn = longest(r);
+		in
+			assert(rn-ln = b,(
+				"AVL tree is not balanced b left right " ^
+				(Int.toString b) ^ " " ^
+				(Int.toString ln) ^ " " ^
+				(Int.toString rn)
+			));
+			checkbalance(l);
+			checkbalance(r)
+		end;
+
+	val test = checkbalance;
+
+	fun toString sfn Empty = ""
+	|	toString sfn (Node {left=l, right=r, value=v, balance=b}) = (
+			(sfn v) ^ " " ^
+			(case l of
+				Empty => "-"
+			|	Node {value=v, ...} => (sfn v)) ^
+			" " ^
+			(case r of
+				Empty => "-"
+			|	Node{value=v, ...} => (sfn v)) ^
+			" " ^ (Int.toString b) ^ "\n" ^
+			(toString sfn l) ^
+			(toString sfn r)
+		);
 end
