@@ -78,20 +78,20 @@ fun main () = let
 	val (t1,ld,deletetime) = deletes t;
 	val (l1,lookuptime1) = lookups t1
 in
-	print ("Inserts took " ^ (Int.toString inserttime) ^ "ms.\n");
+	print ("Inserts took " ^ (LargeInt.toString inserttime) ^ "ms.\n");
 
 	IntBST.test t;
 	print "Tree is balanced\n";
 
-	print ("Lookups took " ^ (Int.toString lookuptime) ^ "ms.\n");
+	print ("Lookups took " ^ (LargeInt.toString lookuptime) ^ "ms.\n");
 	print ("There were " ^ (Int.toString l) ^ " successful lookups.\n");
 
-	print ("Deletions took " ^ (Int.toString deletetime) ^ "ms.\n");
+	print ("Deletions took " ^ (LargeInt.toString deletetime) ^ "ms.\n");
 	print ("There were " ^ (Int.toString ld) ^ " successful deletions.\n");
 
 	IntBST.test t1;
 	print "Tree after deletions is balanced\n";
 
-	print ("Lookups took " ^ (Int.toString lookuptime1) ^ "ms.\n");
+	print ("Lookups took " ^ (LargeInt.toString lookuptime1) ^ "ms.\n");
 	print ("There were " ^ (Int.toString l1) ^ " successful lookups.\n")
 end;
