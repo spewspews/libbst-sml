@@ -60,12 +60,9 @@ functor AVLcreate(O : ORDERED) : BST = struct
 		let
 			val Node {left=sl, right=sr, value=sv, ...} = child(t,~a);
 			val Node {left=rl, right=rr, value=rv, ...} = child(t,a);
-			val (sb,rb) = if b = a then
-				(~a,0)
-			else if b = ~a then
-				(0,a)
-			else
-				(0,0);
+			val (sb,rb) = if b = a then (~a,0)
+				else if b = ~a then (0,a)
+				else (0,0);
 			val s = {balance=sb, left=sl, right=sr, value=sv};
 			val r = {balance=rb, left=rl, right=rr, value=rv};
 			val {left=l, right=r, value=v, ...} = setboth(t,a,Node s,Node r)
@@ -86,8 +83,8 @@ functor AVLcreate(O : ORDERED) : BST = struct
 	fun insertfix ({balance=0, left=l, right=r, value=v},a) =
 			(true,Node {balance=a, left=l, right=r, value=v})
 	|	insertfix (s as {balance=b, left=l, right=r, value=v},a) =
-			if b = ~a then
-				(false,Node {balance=0, left=l, right=r, value=v})
+			if b = ~a
+			then (false,Node {balance=0, left=l, right=r, value=v})
 			else let
 				val Node {balance=b, ...} = child(s,a);
 			in
@@ -108,10 +105,8 @@ functor AVLcreate(O : ORDERED) : BST = struct
 				end
 			|	EQUAL => (0,false,{value=k, left=l, right=r, balance=b})
 		in
-			if fix then
-				insertfix (s,a)
-			else
-				(false,Node s)
+			if fix then insertfix (s,a)
+			else (false,Node s)
 		end;
 
 	fun insert (t,k) = let val (fix,t) = insert1(t,k) in t end;
@@ -119,8 +114,8 @@ functor AVLcreate(O : ORDERED) : BST = struct
 	fun deletefix ({balance=0,left=l,right=r,value=v},a) =
 			(false,Node {balance=a,left=l,right=r,value=v})
 	|	deletefix (s as {balance=b,left=l,right=r,value=v},a) =
-			if(b = ~a) then
-				(true,Node {balance=0,left=l,right=r,value=v})
+			if b = ~a
+			then (true,Node {balance=0,left=l,right=r,value=v})
 			else let
 				val Node {balance=cb,...} = child(s,a);
 			in
@@ -169,23 +164,41 @@ functor AVLcreate(O : ORDERED) : BST = struct
 					in
 						(found,fix,1,q)
 					end
-			in if fix then
-				let
+			in
+				if fix then let
 					val (fix,q) = deletefix(q,a)
 				in
 					(found,fix,q)
 				end
-			else
-				(found,false,Node q)
+				else (found,false,Node q)
 			end
 		end;
 
 	fun delete (Empty,k) = (false,Empty)
 	|	delete (t,k) = let val (found,fix,t) = delete1(t,k) in (found,t) end;
 
-	fun map _ (_,_) _ = [];
+	fun	optcmp (x,NONE) = EQUAL
+	|	optcmp (x,SOME y) = cmp(x,y);
 
-	fun app _ (_,_) _ = ();
+	fun	map _ _ Empty = []
+	|	map f (min,max) (Node {left=l, right=r, value=v, ...}) =
+		let
+			val llist = map f (min,max) l;
+			val rlist = map f (min,max) r
+		in
+			if optcmp (v,min) = LESS orelse optcmp (v,max) = GREATER
+			then llist @ rlist
+			else llist @ (f v)::rlist
+		end;
+
+	fun	app _ _ Empty = ()
+	|	app f (min,max) (Node{left=l, right=r, value=v, ...}) = (
+			app f (min,max) l;
+			if optcmp(v,min) = LESS orelse optcmp(v,max) = GREATER
+			then ()
+			else f v;
+			app f (min,max) r
+		);
 
 	fun longest Empty = 0
 	|	longest (Node {left=l, right=r,...}) =

@@ -9,7 +9,7 @@ end;
 
 structure IntBST = AVLcreate(Node);
 
-val max =  10000000;
+val max =   1000000;
 val nodes = 1000000;
 
 fun rand m = let
@@ -20,58 +20,45 @@ end;
 
 val nrand = rand max;
 
-local
-	fun insertloop rnd m t i =
-		if i < m then
-			insertloop rnd m (IntBST.insert (t,rnd())) (i+1)
-		else t
+fun inserts t = let
+	fun theloop (t,i) = if i < nodes
+		then let val t = IntBST.insert (t,nrand())
+		in theloop (t,i+1)
+		end else t;
+	val timer = Timer.startCPUTimer();
+	val t = theloop (t,0);
+	val {nongc={usr=usertime, ...}, ...} = Timer.checkCPUTimes timer;
 in
-	fun inserts t = let
-		val theloop = insertloop nrand nodes;
-		val timer = Timer.startCPUTimer();
-		val t = theloop t 0;
-		val {nongc={usr=usertime, ...}, ...} = Timer.checkCPUTimes timer;
-	in
-		(t,Time.toMilliseconds usertime)
-	end
+	(t,Time.toMilliseconds usertime)
 end;
 
-local
-	fun lookuploop rnd m t i l =
-		if i < m then
-			case IntBST.lookup (t,rnd()) of
-				SOME _ =>  lookuploop rnd m t (i+1) (l+1)
-			|	NONE => lookuploop rnd m t (i+1) l
-		else l
+fun lookups t = let
+	fun theloop (t,i,l) = if i < nodes
+		then case IntBST.lookup (t,nrand()) of
+			SOME _ => theloop (t,i+1,l+1)
+		|	NONE => theloop (t,i+1,l)
+		else l;
+	val timer = Timer.startCPUTimer();
+	val l = theloop (t,0,0);
+	val {nongc={usr=usertime, ...}, ...} = Timer.checkCPUTimes timer
 in
-	fun lookups t = let
-		val theloop = lookuploop nrand nodes;
-		val timer = Timer.startCPUTimer();
-		val l = theloop t 0 0;
-		val {nongc={usr=usertime, ...}, ...} = Timer.checkCPUTimes timer;
-	in
-		(l,Time.toMilliseconds usertime)
-	end
+	(l,Time.toMilliseconds usertime)
 end;
 
-local
-	fun deleteloop rnd m t i l =
-		if i < m then
-			case IntBST.delete (t,rnd()) of
-				(true,t) =>  deleteloop rnd m t (i+1) (l+1)
-			|	(false,t) => deleteloop rnd m t (i+1) l
-		else (t,l)
+fun deletes t = let
+	fun theloop (t,i,l) = if i < nodes
+		then case IntBST.delete (t,nrand()) of
+			(true,t) => theloop (t,i+1,l+1)
+		|	(false,t) => theloop (t,i+1,l)
+		else (t,l);
+	val timer = Timer.startCPUTimer();
+	val (t,l) = theloop (t,0,0);
+	val {nongc={usr=usertime, ...}, ...} = Timer.checkCPUTimes timer
 in
-	fun deletes t = let
-		val theloop = deleteloop nrand nodes;
-		val timer = Timer.startCPUTimer();
-		val (t,l) = theloop t 0 0;
-		val {nongc={usr=usertime, ...}, ...} = Timer.checkCPUTimes timer;
-	in
-		(t,l,Time.toMilliseconds usertime)
-	end
+	(t,l,Time.toMilliseconds usertime)
 end;
 
+(*
 fun main () = let
 	val (t,inserttime) = inserts IntBST.create;
 	val (l,lookuptime) = lookups t;
@@ -94,4 +81,30 @@ in
 
 	print ("Lookups took " ^ (LargeInt.toString lookuptime1) ^ "ms.\n");
 	print ("There were " ^ (Int.toString l1) ^ " successful lookups.\n")
+end;
+*)
+
+fun main () = let
+	val (t,time) = inserts IntBST.create;
+	val _ = print ("Inserts took " ^ (LargeInt.toString time) ^ "ms.\n")
+
+	val _ = IntBST.test t;
+	val _ = print("Tree is balanced\n");
+
+	val (n,time) = lookups t;
+	val _ = print ("Lookups took " ^ (LargeInt.toString time) ^ "ms.\n");
+	val _ = print ("There were " ^ (Int.toString n) ^ " successful lookups.\n");
+
+	val (t,n,time) = deletes t;
+	val _ = print ("Deletions took " ^ (LargeInt.toString time) ^ "ms.\n");
+	val _ = print ("There were " ^ (Int.toString n) ^ " successful deletions.\n");
+
+	val _ = IntBST.test t;
+	val _ = print "Tree after deletions is balanced\n";
+
+	val (n,time) = lookups t
+	val _ = print ("Lookups took " ^ (LargeInt.toString time) ^ "ms.\n");
+	val _ = print ("There were " ^ (Int.toString n) ^ " successful lookups.\n")
+in
+	()
 end;
