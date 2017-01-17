@@ -180,15 +180,22 @@ functor AVLcreate(O : ORDERED) : BST = struct
 	fun	optcmp (x,NONE) = EQUAL
 	|	optcmp (x,SOME y) = cmp(x,y);
 
-	fun	map _ _ Empty = []
-	|	map f (min,max) (Node {left=l, right=r, value=v, ...}) =
+	fun	map f (min,max) t =
 		let
-			val llist = map f (min,max) l;
-			val rlist = map f (min,max) r
+			fun map1 (Empty,lst) = lst
+			|	map1 (Node{left=l, right=r, value=v, ...},lst) = 
+			let
+				val lst = if optcmp(v,max) = GREATER
+					then lst
+					else (f v)::map1 (r,lst);
+				val lst = if optcmp(v,min) = LESS
+					then lst
+					else map1 (l,lst)
+			in
+				lst
+			end
 		in
-			if optcmp (v,min) = LESS orelse optcmp (v,max) = GREATER
-			then llist @ rlist
-			else llist @ (f v)::rlist
+			map1 (t,[])
 		end;
 
 	fun	app _ _ Empty = ()
