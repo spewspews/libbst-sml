@@ -109,7 +109,7 @@ functor AVLcreate(O : ORDERED) : BST = struct
 			else (false,Node s)
 		end;
 
-	fun insert (t,k) = let val (fix,t) = insert1(t,k) in t end;
+	fun insert (t,k) = let val (_,t) = insert1(t,k) in t end;
 
 	fun deletefix ({balance=0,left=l,right=r,value=v},a) =
 			(false,Node {balance=a,left=l,right=r,value=v})
