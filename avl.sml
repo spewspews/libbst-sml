@@ -96,8 +96,7 @@ functor AVLcreate(O : ORDERED) : BST = struct
 	|	insert1 (Node {left=l, right=r, balance=b, value=v},k) =
 		let
 			val (a,fix,s) = case cmp(k,v) of
-				LESS => let val (fix,newl) = insert1(l,k)
-				in
+				LESS => let val (fix,newl) = insert1(l,k) in
 					(~1,fix,{left=newl, right=r, balance=b, value=v})
 				end
 			|	GREATER => let val (fix,newr) = insert1(r,k) in
@@ -120,7 +119,7 @@ functor AVLcreate(O : ORDERED) : BST = struct
 				val Node {balance=cb,...} = child(s,a);
 			in
 				if cb = 0 then let
-					val {value=v,left=l,right=r,...} = rotate (s,a);
+					val {value=v,left=l,right=r,...} = rotate(s,a);
 					val s = {balance= ~a,left=l,right=r,value=v}
 				in
 					(false,Node s)
@@ -210,18 +209,18 @@ functor AVLcreate(O : ORDERED) : BST = struct
 	fun longest Empty = 0
 	|	longest (Node {left=l, right=r,...}) =
 		let
-			val ln = longest(l);
-			val rn = longest(r);
+			val ln = longest l;
+			val rn = longest r;
 			val m = if ln > rn then ln else rn
 		in
-			m+1
+			m + 1
 		end;
 
 	fun checkbalance Empty = ()
 	|	checkbalance (Node {left=l, right=r, balance=b,...}) =
 		let
-			val ln = longest(l);
-			val rn = longest(r)
+			val ln = longest l;
+			val rn = longest r
 		in
 			assert(rn-ln = b,(
 				"AVL tree is not balanced b left right " ^
@@ -229,8 +228,8 @@ functor AVLcreate(O : ORDERED) : BST = struct
 				(Int.toString ln) ^ " " ^
 				(Int.toString rn)
 			));
-			checkbalance(l);
-			checkbalance(r)
+			checkbalance l;
+			checkbalance r
 		end;
 
 	val test = checkbalance;
